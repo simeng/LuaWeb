@@ -1,0 +1,18 @@
+PREREQUISITE
+
+* Fetch markdown.md from http://www.frykholm.se/files/markdown.lua
+* Create a git repo for your blog articles.
+
+
+INSTALL
+
+Update etc/config.json:
+ - Update path.blog to point to your article-repo
+ - Update blog.title to set your blog default title
+
+Update nginx-config:
+ - Add a location directive with content_by_lua_file pointing to index.lua
+   in LuaWeb repo.
+ - Set root to LuaWeb repo.
+ - Add LuaWeb repo path to lua_package_path
+

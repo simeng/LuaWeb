@@ -5,14 +5,24 @@ local redis = require "resty.redis"
 local cjson = require "cjson"
 local markdown = require "markdown"
 
+if not config then
+    local f = assert(io.open(ngx.var.root .. "/etc/config.json", "r"))
+    local c = f:read("*all")
+    f:close()
+
+    config = cjson.decode(c)
+end
+
 -- Set the content type
-ngx.header.content_type = 'text/html';
+ngx.header.content_type = 'text/html'
 
 -- use nginx $root variable for template dir, needs trailing slash
-TEMPLATEDIR = ngx.var.root .. 'lua/';
+TEMPLATEDIR = ngx.var.root
 -- The git repository storing the markdown files. Needs trailing slash
-BLAGDIR = TEMPLATEDIR .. 'md/'
-BLAGTITLE = 'hveem.no'
+BLAGDIR = TEMPLATEDIR .. config.path.blog
+BLAGTITLE = config.blog.title
+
+BASE = config.path.base_url
 
 -- the db global
 red = nil
@@ -92,27 +102,6 @@ local function about()
     -- load template
     local page = tirtemplate.tload('about.html')
     local context = {title = 'My lua micro web framework', counter = tostring(counter) }
-    -- render template with counter as context
-    -- and return it to nginx
-    ngx.print( page(context) )
-end
-
-local function saltvirt()
-    -- increment saltvirt counter
-    local counter, err = red:incr("saltvirt_visist_counter")
-    -- load template
-    local page = tirtemplate.tload('saltvirt.html')
-    local context = {title = 'HTML5 virtualization UI on top of Salt Stack', counter = tostring(counter) }
-    -- render template with counter as context
-    -- and return it to nginx
-    ngx.print( page(context) )
-end
-local function icinga()
-    -- increment icinga counter
-    local counter, err = red:incr("icinga_visit_counter")
-    -- load template
-    local page = tirtemplate.tload('salt-icinga-nrpe-replacement.html')
-    local context = {title = 'Salt as icinga NRPE replacement', counter = tostring(counter) }
     -- render template with counter as context
     -- and return it to nginx
     ngx.print( page(context) )
@@ -212,13 +201,10 @@ end
 -- mapping patterns to views
 local routes = {
     ['$']         = index,
-    ['saltvirt$'] = saltvirt,
-    ['2013/01/05/salt-icinga-nrpe-replacement$'] = icinga,
     ['about$']    = about,
     ['(.*)$']     = blog,
 }
 
-local BASE = '/'
 -- iterate route patterns and find view
 for pattern, view in pairs(routes) do
     local uri = '^' .. BASE .. pattern

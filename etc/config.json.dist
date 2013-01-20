@@ -1,0 +1,9 @@
+{
+    "path": {
+        "base_url": "/blog/",
+        "blog": "blog/"
+    },
+    "blog": {
+        "title": "site.com/blog/ - The Blag"
+    }
+}
