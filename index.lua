@@ -93,21 +93,6 @@ local function index()
 end
 
 --
--- the about view
---
-local function about()
-    -- increment about counter
-    local counter, err = red:incr("about_visist_counter")
-
-    -- load template
-    local page = tirtemplate.tload('about.html')
-    local context = {title = 'My lua micro web framework', counter = tostring(counter) }
-    -- render template with counter as context
-    -- and return it to nginx
-    ngx.print( page(context) )
-end
-
---
 -- blog view for a single post
 --
 local function blog(match)
@@ -201,7 +186,6 @@ end
 -- mapping patterns to views
 local routes = {
     ['$']         = index,
-    ['about$']    = about,
     ['(.*)$']     = blog,
 }
 
