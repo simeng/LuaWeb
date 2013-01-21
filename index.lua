@@ -186,7 +186,7 @@ end
 -- mapping patterns to views
 local routes = {
     ['$']         = index,
-    ['(.*)$']     = blog,
+    ['(.+)$']     = blog,
 }
 
 -- iterate route patterns and find view
