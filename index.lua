@@ -1,7 +1,6 @@
 -- load our template engine
 local tirtemplate = require('tirtemplate')
--- Load redis
-local redis = require "resty.redis"
+local bloglib = require('bloglib')
 local cjson = require "cjson"
 local markdown = require "markdown"
 
@@ -26,14 +25,6 @@ BASE = config.path.base_url
 
 -- the db global
 red = nil
-
--- Return a table with post date as key and title as val
-local function posts_with_dates(limit)
-    local posts, err = red:zrevrange('posts', 0, limit, 'withscores')
-    if err then return {} end
-    posts = red:array_to_hash(posts)
-    return swap(posts)
-end
 
 function filename2title(filename)
     title = filename:gsub('.md$', ''):gsub('-', ' ')
@@ -77,9 +68,9 @@ end
 local function index()
     
     -- increment index counter
-    local counter, err = red:incr("index_visist_counter")
+    local counter, err = bloglib.visit_index()
     -- Get 10 posts
-    local posts = posts_with_dates(10)
+    local posts = bloglib.posts_with_dates(10)
     -- load template
     local page = tirtemplate.tload('index.html')
     local context = {
@@ -98,14 +89,13 @@ end
 local function blog(match)
     local page = match[1] 
     -- Checkf the requests page exists as a key in the sorted set
-    local date, err = red:zscore('posts', page)
+    local date, err = bloglib.get_meta(page)
     -- No match, return 404
     if err or date == ngx.null then
         return ngx.HTTP_NOT_FOUND
     end
-    -- Check if the page is in redis cache
     -- check if the page cache needs updating
-    local post, err = red:get('post:'..page..':log')
+    local post, err = bloglib.get_post(page)
     if err or post == ngx.null then
         ngx.say('Error fetching post from database')
         return 500
@@ -118,7 +108,7 @@ local function blog(match)
             lastupdate = logdate
         end
     end
-    local lastgenerated, err = red:get('post:'..page..':cached')
+    local lastgenerated, err = bloglib.get_post_html(page)
     local nocache = true
     if lastgenerated == ngx.null or err then 
         lastgenerated = 0 
@@ -134,16 +124,16 @@ local function blog(match)
         local mdcontent = mdfilefp:read('*a')
         mdhtml = markdown(mdcontent) 
         mdfilefp:close()
-        local ok, err = red:set('post:'..page..':cached', lastupdate)
-        local ok, err = red:set('post:'..page..':md', mdhtml)
+        bloglib.set_post_html(page, lastupdate)
+        bloglib.set_post_md(page, mdhtml)
     else
-        mdhtml = red:get('post:'..page..':md')
+        mdhtml = bloglib.get_post_md(page)
     end
     -- increment visist counter
-    local counter, err = red:incr(page..":visit")
+    bloglib.visit_page(page)
 
     -- Get more posts to be linked
-    local posts = posts_with_dates(5)
+    local posts = bloglib.posts_with_dates(5)
 
     local ctx = {
         created = ngx.http_time(date),
@@ -157,32 +147,6 @@ local function blog(match)
 
 end
 
--- 
--- Initialise db
---
-local function init_db()
-    -- Start redis connection
-    red = redis:new()
-    local ok, err = red:connect("unix:/var/run/redis/redis.sock")
-    if not ok then
-        ngx.say("failed to connect: ", err)
-        return
-    end
-end
-
---
--- End db, we could close here, but park it in the pool instead
---
-local function end_db()
-    -- put it into the connection pool of size 100,
-    -- with 0 idle timeout
-    local ok, err = red:set_keepalive(0, 100)
-    if not ok then
-        ngx.say("failed to set keepalive: ", err)
-        return
-    end
-end
-
 -- mapping patterns to views
 local routes = {
     ['$']         = index,
@@ -194,9 +158,9 @@ for pattern, view in pairs(routes) do
     local uri = '^' .. BASE .. pattern
     local match = ngx.re.match(ngx.var.uri, uri, "") -- regex mather in compile mode
     if match then
-        init_db()
+        bloglib.init()
         exit = view(match) or ngx.HTTP_OK
-        end_db()
+        bloglib.destroy()
         ngx.exit( exit )
     end
 end

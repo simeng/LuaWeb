@@ -5,7 +5,6 @@
             {% for date, title in itersort(posts) do %}
             <li><h5><a href="{{BASE}}{{title}}">{{filename2title(title)}}</a><small> {{ ngx.http_time(date) }}</a>
             {% end %}
-            <li><h5><a href="{{BASE}}about">LuaWeb - a lua micro web framework</a> <small>10.11.2012</small></h5></li>
         </ul>
     </div>
     
