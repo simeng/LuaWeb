@@ -3,6 +3,8 @@ local tirtemplate = require('tirtemplate')
 local bloglib = require('bloglib')
 local cjson = require "cjson"
 local markdown = require "markdown"
+-- Load our blog atom generator
+local atom = require "atom"
 
 if not config then
     local f = assert(io.open(ngx.var.root .. "/etc/config.json", "r"))
@@ -22,6 +24,8 @@ BLAGDIR = TEMPLATEDIR .. config.path.blog
 BLAGTITLE = config.blog.title
 
 BASE = config.path.base_url
+BLAGURL = config.blog.url
+BLAGAUTHOR = config.blog.author
 
 -- the db global
 red = nil
@@ -81,6 +85,21 @@ local function index()
     -- render template with counter as context
     -- and return it to nginx
     ngx.print( page(context) )
+end
+
+-- 
+-- Atom feed view
+--
+local function feed()
+
+    -- increment feed counter
+    local counter, err = red:incr("feed:visit")
+    -- Get 10 posts
+    local posts = posts_with_dates(10)
+    -- Set correct content type
+    ngx.header.content_type = 'application/atom+xml'
+    ngx.print( atom.generate_xml(BLAGTITLE, BLAGURL, BLAGAUTHOR .. "'s blog", BLAGAUTHOR, 'feed/', posts) )
+
 end
 
 --
@@ -150,7 +169,8 @@ end
 -- mapping patterns to views
 local routes = {
     ['$']         = index,
-    ['(.+)$']     = blog,
+    ['feed/$']     = feed,
+    ['(.*)$']     = blog,
 }
 
 -- iterate route patterns and find view
