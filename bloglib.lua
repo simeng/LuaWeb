@@ -57,8 +57,8 @@ function get_post_html(page)
     return red:get('post:'..page..':cached')
 end
 
-function set_cache(page, lastupdate)
-    local ok, err = red:set('post:'..page..':cached', lastupdate)
+function set_post_html(page, html)
+    local ok, err = red:set('post:'..page..':cached', html)
 end
 
 function visit_index()
