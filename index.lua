@@ -27,9 +27,6 @@ BASE = config.path.base_url
 BLAGURL = config.blog.url
 BLAGAUTHOR = config.blog.author
 
--- the db global
-red = nil
-
 function filename2title(filename)
     title = filename:gsub('.md$', ''):gsub('-', ' ')
     return title
@@ -91,11 +88,10 @@ end
 -- Atom feed view
 --
 local function feed()
-
     -- increment feed counter
-    local counter, err = red:incr("feed:visit")
+    bloglib.visit_feed()
     -- Get 10 posts
-    local posts = posts_with_dates(10)
+    local posts = bloglib.posts_with_dates(10)
     -- Set correct content type
     ngx.header.content_type = 'application/atom+xml'
     ngx.print( atom.generate_xml(BLAGTITLE, BLAGURL, BLAGAUTHOR .. "'s blog", BLAGAUTHOR, 'feed/', posts) )

@@ -69,6 +69,10 @@ function visit_page(page)
     local counter, err = red:incr(page..":visit")
 end
 
+function visit_feed()
+    local counter, err = red:incr("feed:visit")
+end
+
 function init()
     init_db()
 end
