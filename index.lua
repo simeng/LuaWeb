@@ -7,7 +7,7 @@ local markdown = require "markdown"
 local atom = require "atom"
 
 if not config then
-    local f = assert(io.open(ngx.var.root .. "/etc/config.json", "r"))
+    local f = assert(io.open(ngx.var.document_root .. "/etc/config.json", "r"))
     local c = f:read("*all")
     f:close()
 
@@ -18,7 +18,7 @@ end
 ngx.header.content_type = 'text/html'
 
 -- use nginx $root variable for template dir, needs trailing slash
-TEMPLATEDIR = ngx.var.root
+TEMPLATEDIR = ngx.var.document_root .. '/'
 -- The git repository storing the markdown files. Needs trailing slash
 BLAGDIR = TEMPLATEDIR .. config.path.blog
 BLAGTITLE = config.blog.title
